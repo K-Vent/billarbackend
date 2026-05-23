@@ -10,8 +10,6 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
-    "@prisma/adapter-neon": "^7.8.0",
-    "@prisma/client": "^7.8.0",
     "bcrypt": "^5.1.1",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.7",
@@ -28,9 +26,10 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@prisma/client": "^5.22.0",
     "electron": "^28.2.0",
     "electron-builder": "^24.13.3",
-    "prisma": "^7.8.0"
+    "prisma": "^5.22.0"
   },
   "build": {
     "appId": "com.laesquina.pos",
