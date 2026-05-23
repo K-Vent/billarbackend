@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model auditoria {
+  id         Int       @id @default(autoincrement())
+  usuario_id Int?
+  accion     String    @db.VarChar(100)
+  detalles   String?
+  fecha      DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model auditoria_logs {
+  id               Int       @id @default(autoincrement())
+  nombre_tabla     String    @db.VarChar(50)
+  operacion        String    @db.VarChar(10)
+  registro_id      Int
+  datos_anteriores Json?
+  fecha_alteracion DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model beneficios {
+  id          Int    @id @default(autoincrement())
+  nivel       String @db.VarChar(20)
+  descripcion String
+}
+
+model cierres {
+  id             BigInt    @id @default(autoincrement())
+  fecha_cierre   DateTime? @default(now()) @db.Timestamptz(6)
+  total_ventas   Decimal?  @db.Decimal
+  cantidad_mesas Int?
+  usuario        String?   @db.VarChar
+  total_gastos   Decimal?  @default(0) @db.Decimal(10, 2)
+}
+
+model clientes {
+  id                Int       @id @default(autoincrement())
+  nombre            String    @db.VarChar(100)
+  telefono          String?   @unique @db.VarChar(20)
+  sellos            Int?      @default(0)
+  nivel             String?   @default("Bronce") @db.VarChar(20)
+  fecha_registro    DateTime? @default(now()) @db.Timestamp(6)
+  pin               String?   @default("1234") @db.VarChar(4)
+  premios_canjeados Int?      @default(0)
+}
+
+model config {
+  clave String  @id @db.VarChar(50)
+  valor String?
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model eventos_privados {
+  id                   Int       @id @default(autoincrement())
+  cliente_nombre       String    @db.VarChar(100)
+  cliente_telefono     String    @db.VarChar(20)
+  fecha_evento         DateTime  @db.Date
+  hora_inicio          DateTime  @db.Time(6)
+  cantidad_personas    String    @db.VarChar(50)
+  tipo_plan            String    @db.VarChar(100)
+  extras_seleccionados String?
+  estado               String?   @default("Pendiente") @db.VarChar(20)
+  fecha_solicitud      DateTime? @default(now()) @db.Timestamp(6)
+  tipo_evento          String?   @default("No especificado") @db.VarChar(100)
+  cliente_email        String?   @default("Sin correo") @db.VarChar(150)
+}
+
+model gastos {
+  id          Int       @id @default(autoincrement())
+  descripcion String?
+  monto       Decimal?  @db.Decimal(10, 2)
+  fecha       DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model mesas {
+  id            Int            @id @default(autoincrement())
+  numero_mesa   Int            @unique
+  tipo          String?        @default("BILLAR") @db.VarChar(20)
+  estado        String?        @default("LIBRE") @db.VarChar(20)
+  precio_hora   Decimal?       @default(10.00) @db.Decimal(10, 2)
+  hora_inicio   DateTime?      @db.Timestamp(6)
+  tiempo_limite Int?           @default(0)
+  pedidos_mesa  pedidos_mesa[]
+}
+
+model pedidos_mesa {
+  id             Int        @id @default(autoincrement())
+  mesa_id        Int?
+  producto_id    Int?
+  cantidad       Int?       @default(1)
+  pagado         Boolean?   @default(false)
+  fecha_creacion DateTime?  @default(now()) @db.Timestamp(6)
+  entregado      Boolean?   @default(false)
+  cliente_nombre String?    @default("General") @db.VarChar(100)
+  mesas          mesas?     @relation(fields: [mesa_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  productos      productos? @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([pagado, entregado], map: "idx_pedidos_kds")
+  @@index([mesa_id, pagado], map: "idx_pedidos_mesa_estado")
+}
+
+model productos {
+  id           Int            @id @default(autoincrement())
+  nombre       String         @db.VarChar(100)
+  precio_venta Decimal        @db.Decimal(10, 2)
+  stock        Int?           @default(0)
+  categoria    String?        @default("General") @db.VarChar(50)
+  estado       String?        @default("activo") @db.VarChar(20)
+  pedidos_mesa pedidos_mesa[]
+}
+
+model usuarios {
+  id       Int     @id @default(autoincrement())
+  username String  @unique @db.VarChar(50)
+  password String  @db.VarChar(255)
+  rol      String? @default("admin") @db.VarChar(20)
+  estado   String? @default("activo") @db.VarChar(20)
+}
+
+model ventas {
+  id              Int       @id @default(autoincrement())
+  fecha           DateTime? @default(now()) @db.Timestamp(6)
+  mesa_id         Int?
+  tipo_mesa       String?   @db.VarChar(20)
+  total_tiempo    Decimal?  @default(0) @db.Decimal(10, 2)
+  total_productos Decimal?  @default(0) @db.Decimal(10, 2)
+  total_final     Decimal?  @default(0) @db.Decimal(10, 2)
+  metodo_pago     String?   @default("EFECTIVO") @db.VarChar(20)
+  pago_efectivo   Decimal?  @default(0) @db.Decimal(10, 2)
+  pago_digital    Decimal?  @default(0) @db.Decimal(10, 2)
+
+  @@index([fecha], map: "idx_ventas_fecha")
+}
