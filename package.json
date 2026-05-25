@@ -5,8 +5,8 @@
   "main": "main-desktop.js",
   "scripts": {
     "start": "node server.js",
-    "test-pc": "electron .",
-    "build-pc": "electron-builder"
+    "dev": "node --watch server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
