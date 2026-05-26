@@ -21,14 +21,14 @@ const obtenerClientes = async (req, res, next) => {
 
 const registrarCliente = async (req, res, next) => {
     try {
-        console.log("📥 RECIBIENDO DATOS DEL SOCIO:", req.body); 
+        console.log("[VIP] Registrando nuevo socio:", req.body);
 
         const { nombre, telefono, pin } = req.body; 
         
         if (!nombre) return res.status(400).json({ error: "El nombre es obligatorio" });
         
         if (!pin || pin.trim() === "") {
-            return res.status(400).json({ error: "⚠️ ALERTA: El PIN no está llegando al servidor desde la página web." });
+            return res.status(400).json({ error: "El PIN no puede estar vacío." });
         }
 
         if (telefono) {
@@ -93,7 +93,7 @@ const agregarSello = async (req, res, next) => {
         // 2. Motor de rangos
         let nuevoNivel = 'Bronce';
         if (totalSellos >= 10) nuevoNivel = 'Plata';
-        if (totalSellos >= 20) nuevoNivel = 'Oro 👑';
+        if (totalSellos >= 20) nuevoNivel = 'Oro';
 
         // 3. Actualizamos el nivel si es necesario
         if (clienteActualizado.nivel !== nuevoNivel) {
@@ -270,9 +270,9 @@ const eliminarCliente = async (req, res, next) => {
         res.status(200).json({ message: 'Socio VIP eliminado correctamente' });
         
     } catch (error) {
-        console.error("🔥 ERROR CRÍTICO AL BORRAR CLIENTE:", error.message);
+        console.error("[ERROR CRITICO] Error al eliminar cliente:", error.message);
         
-        // 🛡️ PRISMA ERROR CODE HANDLING (P2003 = Foreign Key Constraint Failed)
+        // Prisma ERROR CODE P2003 = Foreign Key Constraint Failed
         // Reemplaza el antiguo código '23503' de pg.
         if (error.code === 'P2003') {
             return res.status(500).json({ 

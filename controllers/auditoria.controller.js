@@ -63,7 +63,7 @@ const obtenerRegistrosAuditoria = async (req, res, next) => {
 
     } catch (error) {
         // Registro de error en servidor para monitoreo interno
-        console.error("🔥 [CRÍTICO] Error al leer módulo de auditoría:", error);
+        console.error("[CRITICO] Error en módulo de auditoría:", error);
         
         // Respuesta genérica al cliente por seguridad (no exponer stacktrace)
         res.status(500).json({ 

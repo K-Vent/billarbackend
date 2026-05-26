@@ -59,7 +59,7 @@ router.post('/eventos', async (req, res) => {
         
         res.json({ success: true, mensaje: 'Solicitud de evento enviada exitosamente al sistema.' });
     } catch (error) { 
-        console.error("🔥 Error al registrar evento:", error);
+        console.error("[ERROR] Error al registrar evento:", error);
         res.status(500).json({ success: false, error: 'Error interno al procesar la reserva.' }); 
     }
 });

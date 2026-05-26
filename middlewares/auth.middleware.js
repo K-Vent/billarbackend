@@ -37,7 +37,7 @@ const verificarSesion = (req, res, next) => {
         res.clearCookie('token');
         
         // Registro silencioso en servidor para auditoría técnica
-        console.error(`🛡️ [AUTH FALLIDO] Token rechazado en la ruta ${req.originalUrl}: ${error.message}`);
+        console.error(`[AUTH FALLIDO] Token rechazado en ${req.originalUrl}: ${error.message}`);
 
         if (req.originalUrl.startsWith('/api/')) {
             return res.status(401).json({ error: 'Sesión expirada o token de seguridad inválido.' });
@@ -58,14 +58,14 @@ const soloAdmin = (req, res, next) => {
         const infractor = req.usuario ? req.usuario.username : 'Desconocido';
         
         // Alerta visible en la consola del servidor para monitoreo en tiempo real
-        console.warn(`🚨 [SEGURIDAD] Intento de vulneración de privilegios: El usuario '${infractor}' intentó acceder a ${req.originalUrl}`);
+        console.warn(`[SEGURIDAD] Intento de escalación de privilegios: '${infractor}' en ${req.originalUrl}`);
         
         if (req.originalUrl.startsWith('/api/')) {
             return res.status(403).json({ error: 'Acceso denegado: Área exclusiva de Gerencia.' });
         }
         
         // Redirección táctica a un área segura para el empleado
-        res.redirect('/dashboard.html'); 
+        res.redirect('/dashboard');
     }
 };
 

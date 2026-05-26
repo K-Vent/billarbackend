@@ -99,7 +99,7 @@ const getDashboardStats = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("⚠️ [ANALYTICS ENGINE ERROR]:", error);
+        console.error("[ANALYTICS] Error en el motor de BI:", error);
         res.status(500).json({ error: "Fallo en el procesamiento de BI de la plataforma." });
     }
 };
@@ -129,7 +129,7 @@ const getHistorialCierres = async (req, res) => {
 
         res.json(historialFormateado);
     } catch (error) {
-        console.error("⚠️ Error leyendo historial de cierres:", error);
+        console.error("[ERROR] Lectura de historial de cierres:", error);
         res.json([]); 
     }
 };
@@ -166,7 +166,7 @@ const eliminarCierre = async (req, res) => {
 
         res.json({ success: true });
     } catch (error) {
-        console.error("⚠️ Error al eliminar cierre:", error);
+        console.error("[ERROR] Error al eliminar cierre:", error);
         res.status(500).json({ error: "Error en el servidor al intentar anular el cierre contable." });
     }
 };

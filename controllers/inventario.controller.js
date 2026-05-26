@@ -14,7 +14,7 @@ const prisma = new PrismaClient();
  */
 const obtenerProductos = async (req, res, next) => {
     try {
-        // 🛡️ SOFT DELETE: Solo extraemos los productos que siguen activos
+        // SOFT DELETE: Solo extraemos los productos que siguen activos
         const productos = await prisma.productos.findMany({
             where: {
                 estado: 'activo'
@@ -70,7 +70,7 @@ const eliminarProducto = async (req, res, next) => {
     try {
         const id = parseInt(req.params.id);
         
-        // 🛡️ SOFT DELETE: Actualizamos el estado para inhabilitarlo en el frontend
+        // SOFT DELETE: Actualizamos el estado para inhabilitarlo en el frontend
         await prisma.productos.update({
             where: { 
                 id: id 
