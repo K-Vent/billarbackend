@@ -139,11 +139,12 @@ app.get('/api/logout', (req, res) => {
 // ==========================================
 app.use('/api', require('./routes/inventario.routes'));
 app.use('/api/mesas', require('./routes/mesas.routes'));
-app.use('/api', require('./routes/auditoria.routes'));
+app.use('/api/auditoria', require('./routes/auditoria.routes'));
 app.use('/api', require('./routes/vip.routes'));
 app.use('/api', require('./routes/pedidos.routes'));
 app.use('/api', require('./routes/caja.routes'));
 app.use('/api', require('./routes/eventos.routes'));
+app.use('/api/usuarios', require('./routes/usuarios.routes'));
 
 // ==========================================
 // 5. MANEJO DE ERRORES CENTRALIZADO

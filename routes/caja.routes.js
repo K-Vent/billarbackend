@@ -61,8 +61,8 @@ router.get('/caja/actual', verificarSesion, async (req, res, next) => {
             ? ultimoCierre.fecha_cierre 
             : new Date('2000-01-01T00:00:00Z');
 
-        // 2. Prisma Aggregation: Agrupamos las 7 consultas antiguas en solo 3 promesas paralelas
-        const [ventasStats, gastosStats, listaVentas] = await Promise.all([
+        // 2. Prisma Aggregation: Agrupamos las consultas en promesas paralelas
+        const [ventasStats, gastosStats, listaVentas, listaGastos] = await Promise.all([
             prisma.ventas.aggregate({
                 _sum: {
                     total_final: true,
@@ -79,6 +79,10 @@ router.get('/caja/actual', verificarSesion, async (req, res, next) => {
                 where: { fecha: { gt: fechaFiltro } }
             }),
             prisma.ventas.findMany({
+                where: { fecha: { gt: fechaFiltro } },
+                orderBy: { fecha: 'desc' }
+            }),
+            prisma.gastos.findMany({
                 where: { fecha: { gt: fechaFiltro } },
                 orderBy: { fecha: 'desc' }
             })
@@ -105,6 +109,10 @@ router.get('/caja/actual', verificarSesion, async (req, res, next) => {
                 ...v,
                 // Formateamos la hora para mantener compatibilidad con tu frontend
                 hora: v.fecha.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: false })
+            })),
+            listaGastos: listaGastos.map(g => ({
+                ...g,
+                hora: g.fecha.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: false })
             }))
         }); 
     } catch (e) { next(e); }

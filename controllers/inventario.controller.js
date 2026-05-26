@@ -42,12 +42,13 @@ const crearProducto = async (req, res, next) => {
         const { nombre, precio, stock, categoria } = req.body; 
         
         // Asignamos explícitamente el valor "precio" a la columna "precio_venta"
+        // Convertimos a número para que Prisma no falle por tipos de datos
         await prisma.productos.create({
             data: {
                 nombre: nombre,
-                precio_venta: precio,
-                stock: stock,
-                categoria: categoria,
+                precio_venta: parseFloat(precio),
+                stock: parseInt(stock, 10),
+                categoria: categoria || 'General',
                 estado: 'activo' // Valor por defecto asegurado desde la aplicación
             }
         });
@@ -86,8 +87,30 @@ const eliminarProducto = async (req, res, next) => {
     }
 };
 
+const actualizarProducto = async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { nombre, precio, stock, categoria } = req.body;
+        
+        await prisma.productos.update({
+            where: { id: id },
+            data: {
+                nombre: nombre,
+                precio_venta: parseFloat(precio),
+                stock: parseInt(stock, 10),
+                categoria: categoria || 'General'
+            }
+        });
+
+        res.json({ success: true, message: 'Producto actualizado.' });
+    } catch (e) {
+        next(e);
+    }
+};
+
 module.exports = { 
     obtenerProductos, 
     crearProducto, 
-    eliminarProducto 
+    eliminarProducto,
+    actualizarProducto 
 };

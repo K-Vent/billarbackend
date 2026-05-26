@@ -8,7 +8,8 @@ const { verificarSesion, soloAdmin } = require('../middlewares/auth.middleware')
 const { 
     obtenerProductos, 
     crearProducto, 
-    eliminarProducto 
+    eliminarProducto,
+    actualizarProducto 
 } = require('../controllers/inventario.controller');
 
 // ==========================================
@@ -42,5 +43,12 @@ router.post('/productos/nuevo', verificarSesion, soloAdmin, crearProducto);
  * @access  Privado y Estricto (Solo Administradores/Gerencia)
  */
 router.delete('/productos/eliminar/:id', verificarSesion, soloAdmin, eliminarProducto);
+
+/**
+ * @route   PUT /api/productos/actualizar/:id
+ * @desc    Actualiza precio, stock y otros detalles de un producto existente.
+ * @access  Privado y Estricto (Solo Administradores/Gerencia)
+ */
+router.put('/productos/actualizar/:id', verificarSesion, soloAdmin, actualizarProducto);
 
 module.exports = router;
