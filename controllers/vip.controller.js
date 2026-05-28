@@ -23,12 +23,13 @@ const registrarCliente = async (req, res, next) => {
     try {
         console.log("[VIP] Registrando nuevo socio:", req.body);
 
-        const { nombre, telefono, pin } = req.body; 
+        const { nombre, telefono, pin, clave } = req.body; 
+        const userPin = pin || clave;
         
         if (!nombre) return res.status(400).json({ error: "El nombre es obligatorio" });
         
-        if (!pin || pin.trim() === "") {
-            return res.status(400).json({ error: "El PIN no puede estar vacío." });
+        if (!userPin || userPin.trim() === "") {
+            return res.status(400).json({ error: "El PIN o clave no puede estar vacío." });
         }
 
         if (telefono) {
@@ -42,7 +43,7 @@ const registrarCliente = async (req, res, next) => {
             data: {
                 nombre: nombre,
                 telefono: telefono,
-                pin: pin
+                pin: userPin
             }
         });
 
@@ -121,7 +122,7 @@ const canjearPremio = async (req, res, next) => {
         if (!cliente) return res.status(404).json({ error: "Socio no encontrado" });
         
         const canjeados = cliente.premios_canjeados || 0;
-        const premiosDisponibles = Math.floor(cliente.sellos / 10) - canjeados;
+        const premiosDisponibles = Math.floor(cliente.sellos / 7) - canjeados;
 
         if (premiosDisponibles > 0) {
             await prisma.clientes.update({
@@ -152,7 +153,7 @@ const escanearQr = async (req, res, next) => {
         if (!cliente) return res.status(404).json({ error: "Socio no encontrado." });
         
         const canjeados = cliente.premios_canjeados || 0;
-        const premiosDisponibles = Math.floor(cliente.sellos / 10) - canjeados;
+        const premiosDisponibles = Math.floor(cliente.sellos / 7) - canjeados;
         
         res.json({ 
             id: cliente.id, 
@@ -179,8 +180,22 @@ const canjeSeguroTransaccion = async (req, res, next) => {
             const socio = await tx.clientes.findUnique({ where: { id: idSocio } });
             if (!socio) throw new Error("Socio no encontrado en el padrón.");
 
-            const premiosDisponibles = Math.floor(socio.sellos / 10) - (socio.premios_canjeados || 0);
+            const premiosDisponibles = Math.floor(socio.sellos / 7) - (socio.premios_canjeados || 0);
             if (premiosDisponibles <= 0) throw new Error("El socio no tiene premios disponibles.");
+
+            // 1.5 Verificación de Límite Diario (1 por día)
+            const hoy = new Date();
+            hoy.setHours(0,0,0,0);
+            const canjesHoy = await tx.auditoria.count({
+                where: {
+                    accion: 'CANJE VIP',
+                    detalles: { contains: `Socio ID ${idSocio} ` },
+                    fecha: { gte: hoy }
+                }
+            });
+            if (canjesHoy >= 1) {
+                throw new Error("El socio ya ha canjeado una hora gratis el día de hoy. Límite de 1 por día.");
+            }
 
             // 2. Obtener estado actual de la mesa para inyectar la hora gratis
             const mesa = await tx.mesas.findUnique({ where: { id: idMesa } });
