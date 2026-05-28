@@ -1,5 +1,12 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
+
+const vipLoginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: { error: "Demasiados intentos fallidos. Por seguridad, intente más tarde." }
+});
 
 // Middlewares de Seguridad (IAM)
 const { verificarSesion, soloAdmin } = require('../middlewares/auth.middleware');
@@ -68,7 +75,7 @@ router.delete('/clientes/:id', verificarSesion, soloAdmin, eliminarCliente);
  * @desc    Autentica al cliente en su propio portal móvil (Web App Pública).
  * @access  Público
  */
-router.post('/vip/login', loginVip);
+router.post('/vip/login', vipLoginLimiter, loginVip);
 
 /**
  * @route   GET /api/vip/escanear/:codigo

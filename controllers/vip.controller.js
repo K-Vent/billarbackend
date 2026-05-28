@@ -21,8 +21,6 @@ const obtenerClientes = async (req, res, next) => {
 
 const registrarCliente = async (req, res, next) => {
     try {
-        console.log("[VIP] Registrando nuevo socio:", req.body);
-
         const { nombre, telefono, pin, clave } = req.body; 
         const userPin = pin || clave;
         
