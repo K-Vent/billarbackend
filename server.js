@@ -114,12 +114,12 @@ app.post('/api/login', loginLimiter, async (req, res, next) => {
         );
 
         res.cookie('token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', 
-    sameSite: 'lax',
-    maxAge: 12 * 60 * 60 * 1000,
-    path: '/'             // 🔥 VITAL: Esto asegura que la cookie aplique a toda la web
-});
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production', // true en Render
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // vital para cross-domain (Vercel -> Render)
+            maxAge: 12 * 60 * 60 * 1000,
+            path: '/'
+        });
 
         res.json({ success: true, rol: user.rol });
     } catch (e) { 
