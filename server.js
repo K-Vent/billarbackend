@@ -62,6 +62,11 @@ const loginLimiter = rateLimit({
 // ==========================================
 // 3. RUTAS CORE (AUTH & PÚBLICO)
 // ==========================================
+
+app.get('/api/health', (req, res) => {
+    console.log("[CRON] Ping recibido para mantener el servidor despierto.");
+    res.status(200).send('OK');
+});
 // ==========================================
 // 3. API DE AUTENTICACIÓN (LOGIN & JWT)
 // ==========================================
