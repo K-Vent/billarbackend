@@ -31,7 +31,7 @@ app.use(morgan('dev')); // Loggea todas las peticiones en consola
 const corsOptions = {
     origin: [
         'http://localhost:5173',
-        'https://la-esquina-app.onrender.com'
+        'https://laesquinadelbillar.vercel.app/'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
