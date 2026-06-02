@@ -26,6 +26,21 @@ const cambiarMesaSchema = z.object({
 let configCache = { precio_billar: 10, ultimaActualizacion: 0 };
 
 async function getPrecioBillar() {
+    const ahora = Date.now();
+    // Cache de 60 segundos para no saturar la DB
+    if (ahora - configCache.ultimaActualizacion > 60000) {
+        try {
+            const config = await prisma.config.findUnique({
+                where: { clave: 'PRECIO_HORA_BILLAR' }
+            });
+            if (config && config.valor) {
+                configCache.precio_billar = parseFloat(config.valor);
+            }
+            configCache.ultimaActualizacion = ahora;
+        } catch (e) {
+            console.error("Error al obtener precio de billar:", e);
+        }
+    }
     return configCache.precio_billar;
 }
 
