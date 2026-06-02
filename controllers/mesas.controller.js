@@ -384,18 +384,28 @@ const obtenerNombresMesa = async (req, res, next) => {
     try {
         const id = z.coerce.number().int().parse(req.params.id);
         
-        // Prisma: Para simular un SELECT DISTINCT, usamos findMany con distinct
-        const registros = await prisma.pedidos_mesa.findMany({
+        // Obtener todos los pedidos pendientes de la mesa
+        const pedidos = await prisma.pedidos_mesa.findMany({
             where: { mesa_id: id, pagado: false },
-            select: { cliente_nombre: true },
-            distinct: ['cliente_nombre']
+            include: { productos: true }
         });
         
-        const nombres = registros
-            .map(row => row.cliente_nombre)
-            .filter(n => n !== 'General' && n !== null && n.trim() !== '');
+        // Agrupar por cliente_nombre y sumar totales
+        const cuentasMap = {};
+        pedidos.forEach(p => {
+            const nombre = p.cliente_nombre || 'General';
+            if (nombre === 'General' || nombre.trim() === '') return;
             
-        res.json(nombres);
+            if (!cuentasMap[nombre]) cuentasMap[nombre] = 0;
+            cuentasMap[nombre] += (Number(p.productos.precio_venta) * p.cantidad);
+        });
+        
+        const nombresConTotales = Object.keys(cuentasMap).map(nombre => ({
+            nombre: nombre,
+            total: cuentasMap[nombre]
+        }));
+            
+        res.json(nombresConTotales);
     } catch (e) { next(e); }
 };
 
