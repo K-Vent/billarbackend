@@ -12,7 +12,8 @@ const abrirMesaSchema = z.object({
 const cerrarMesaSchema = z.object({
     metodo: z.enum(['EFECTIVO', 'DIGITAL', 'MIXTO']),
     pago_efectivo: z.number().optional(),
-    pago_digital: z.number().optional()
+    pago_digital: z.number().optional(),
+    id_socio_vip: z.number().int().optional()
 });
 
 const cambiarMesaSchema = z.object({
@@ -194,8 +195,7 @@ const cerrarMesa = async (req, res, next) => {
         const efectivo = val.metodo === 'MIXTO' ? (val.pago_efectivo || 0) : (val.metodo === 'EFECTIVO' ? totalF : 0);
         const digital = val.metodo === 'MIXTO' ? (val.pago_digital || 0) : (val.metodo !== 'EFECTIVO' && val.metodo !== 'MIXTO' ? totalF : 0);
 
-        // 🔥 Prisma: Transacción. Ejecutamos todo o nada. Evita datos corruptos si algo falla a la mitad.
-        await prisma.$transaction([
+        let transacciones = [
             prisma.ventas.create({
                 data: {
                     mesa_id: id,
@@ -217,7 +217,27 @@ const cerrarMesa = async (req, res, next) => {
                 where: { id: id },
                 data: { estado: 'LIBRE', hora_inicio: null, tiempo_limite: 0 }
             })
-        ]);
+        ];
+
+        if (val.id_socio_vip) {
+            const socio = await prisma.clientes.findUnique({ where: { id: val.id_socio_vip } });
+            if (socio) {
+                const nuevosSellos = (socio.sellos || 0) + 1;
+                let nuevoNivel = 'Bronce';
+                if (nuevosSellos >= 10) nuevoNivel = 'Plata';
+                if (nuevosSellos >= 20) nuevoNivel = 'Oro';
+                
+                transacciones.push(
+                    prisma.clientes.update({
+                        where: { id: val.id_socio_vip },
+                        data: { sellos: nuevosSellos, nivel: nuevoNivel }
+                    })
+                );
+            }
+        }
+
+        // 🔥 Prisma: Transacción. Ejecutamos todo o nada. Evita datos corruptos si algo falla a la mitad.
+        await prisma.$transaction(transacciones);
         
         // ESPÍA BLINDADO
         try {
