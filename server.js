@@ -121,14 +121,13 @@ app.post('/api/login', loginLimiter, async (req, res, next) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production', // true en Render
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // vital para cross-domain (Vercel -> Render)
-            maxAge: 12 * 60 * 60 * 1000,
-            path: '/'
+            sameSite: 'none',
+            maxAge: 12 * 60 * 60 * 1000 // 12 horas
         });
 
-        res.json({ success: true, rol: user.rol });
-    } catch (e) { 
-        next(e); 
+        res.json({ success: true, rol: user.rol, token: token });
+    } catch (err) { 
+        next(err); 
     }
 });
 app.get('/api/usuario/actual', verificarSesion, (req, res) => {

@@ -17,7 +17,12 @@ const SECRET_KEY = process.env.JWT_SECRET;
  */
 const verificarSesion = (req, res, next) => {
     // Uso de optional chaining (?.) para evitar caídas si req.cookies no está definido
-    const token = req.cookies?.token; 
+    let token = req.cookies?.token; 
+    
+    // Fallback para Safari iOS / ITP que bloquea cookies de terceros
+    if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+        token = req.headers.authorization.split(' ')[1];
+    }
     
     if (!token) {
         if (req.originalUrl.startsWith('/api/')) {
