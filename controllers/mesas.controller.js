@@ -383,21 +383,30 @@ const cerrarCuentaPersonal = async (req, res, next) => {
 const obtenerNombresMesa = async (req, res, next) => {
     try {
         const id = z.coerce.number().int().parse(req.params.id);
+        const mesa = await prisma.mesas.findUnique({ where: { id } });
         
-        // Obtener todos los pedidos pendientes de la mesa
+        // Buscar todos los pedidos desde que se abrió la mesa (para no borrar los nombres de los que ya pagaron)
+        const whereClause = (mesa && mesa.hora_inicio)
+            ? { mesa_id: id, fecha_creacion: { gte: mesa.hora_inicio } }
+            : { mesa_id: id, pagado: false };
+
         const pedidos = await prisma.pedidos_mesa.findMany({
-            where: { mesa_id: id, pagado: false },
+            where: whereClause,
             include: { productos: true }
         });
         
-        // Agrupar por cliente_nombre y sumar totales
+        // Agrupar por cliente_nombre y sumar totales (solo los que faltan pagar)
         const cuentasMap = {};
         pedidos.forEach(p => {
             const nombre = p.cliente_nombre || 'General';
             if (nombre === 'General' || nombre.trim() === '') return;
             
             if (!cuentasMap[nombre]) cuentasMap[nombre] = 0;
-            cuentasMap[nombre] += (Number(p.productos.precio_venta) * p.cantidad);
+            
+            // Solo acumula deuda si el pedido NO ha sido pagado
+            if (!p.pagado) {
+                cuentasMap[nombre] += (Number(p.productos.precio_venta) * p.cantidad);
+            }
         });
         
         const nombresConTotales = Object.keys(cuentasMap).map(nombre => ({
