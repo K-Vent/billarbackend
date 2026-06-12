@@ -63,6 +63,23 @@ const getNotificaciones = async (req, res) => {
             });
         });
 
+        // 3. Alertas de Reclamaciones Pendientes
+        const reclamacionesPendientes = await prisma.reclamaciones.findMany({
+            where: { estado: 'Pendiente' },
+            select: { id: true, numero_correlativo: true, tipo_reclamacion: true, fecha_reclamo: true }
+        });
+
+        reclamacionesPendientes.forEach(r => {
+            notificaciones.push({
+                id: `reclamo-${r.id}`,
+                tipo: 'RECLAMO',
+                titulo: `Nuevo ${r.tipo_reclamacion}`,
+                mensaje: `Código ${r.numero_correlativo} a la espera de respuesta.`,
+                fecha: r.fecha_reclamo || new Date(),
+                link: '/admin/reclamaciones'
+            });
+        });
+
         // Ordenamos las notificaciones combinadas por fecha descendente (más recientes primero)
         // para asegurar que el usuario vea primero lo último en ocurrir
         notificaciones.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));

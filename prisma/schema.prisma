@@ -140,3 +140,34 @@ model ventas {
 
   @@index([fecha], map: "idx_ventas_fecha")
 }
+
+model reclamaciones {
+  id                  Int       @id @default(autoincrement())
+  numero_correlativo  String    @unique @db.VarChar(20)
+  fecha_reclamo       DateTime? @default(now()) @db.Timestamp(6)
+  
+  // Datos Consumidor
+  cliente_nombre      String    @db.VarChar(150)
+  cliente_documento   String    @db.VarChar(20)
+  cliente_telefono    String    @db.VarChar(20)
+  cliente_email       String    @db.VarChar(150)
+  cliente_direccion   String    @db.VarChar(255)
+  
+  // Detalle Bien Contratado
+  tipo_bien           String    @db.VarChar(50) // "Producto" o "Servicio"
+  monto_reclamado     Decimal?  @db.Decimal(10, 2)
+  descripcion_bien    String    @db.Text
+  
+  // Reclamo / Queja
+  tipo_reclamacion    String    @db.VarChar(50) // "Reclamo" o "Queja"
+  detalle_reclamacion String    @db.Text
+  pedido_consumidor   String    @db.Text
+  
+  // Administración
+  estado              String?   @default("Pendiente") @db.VarChar(50) // Pendiente, En Proceso, Resuelto
+  respuesta_admin     String?   @db.Text
+  fecha_respuesta     DateTime? @db.Timestamp(6)
+
+  @@index([numero_correlativo])
+  @@index([estado])
+}
