@@ -1,3 +1,8 @@
+/**
+ * @file server.js
+ * @description Archivo principal del servidor backend de La Esquina App. Configura Express, Socket.io, Prisma, autenticación JWT y rutas.
+ */
+
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
@@ -13,21 +18,45 @@ const cookieParser = require('cookie-parser');
 const morgan = require('morgan');
 const { PrismaClient } = require('@prisma/client');
 
-// Validación de entorno (Fail Fast)
+// Validación de entorno (Fail Fast) para asegurar que existe la clave secreta
 if (!process.env.JWT_SECRET) throw new Error("FATAL ERROR: JWT_SECRET no configurado.");
 
+/**
+ * Cliente de Prisma para interactuar con la base de datos.
+ * @type {PrismaClient}
+ */
 const prisma = new PrismaClient();
+
+/**
+ * Instancia de la aplicación Express.
+ */
 const app = express();
+
+/**
+ * Servidor HTTP de Node.js.
+ */
 const server = http.createServer(app);
 
 // ==========================================
 // 1. MIDDLEWARES DE INFRAESTRUCTURA
 // ==========================================
+// Configurar proxy seguro si se está detrás de un balanceador de carga
 app.set('trust proxy', 1);
-app.use(helmet());
-app.use(compression());
-app.use(morgan('dev')); // Loggea todas las peticiones en consola
 
+// Seguridad para los headers HTTP
+app.use(helmet());
+
+// Compresión de respuestas HTTP para mejorar el rendimiento
+app.use(compression());
+
+// Loggea todas las peticiones en consola
+app.use(morgan('dev')); 
+
+/**
+ * Opciones de configuración para el middleware CORS.
+ * Define qué orígenes están permitidos para hacer peticiones al servidor.
+ * @type {Object}
+ */
 const corsOptions = {
     origin: [
         'http://localhost:5173',
@@ -43,20 +72,37 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Parseo de bodies en formato JSON
 app.use(express.json());
+
+// Parseo de datos url-encoded
 app.use(express.urlencoded({ extended: true }));
+
+// Parseo de cookies
 app.use(cookieParser());
 
-// Rate Limiting (Protección contra DDoS y Fuerza Bruta)
+/**
+ * Middleware para limitar la tasa de peticiones (Rate Limiting).
+ * Protege contra ataques DDoS y de fuerza bruta.
+ * @type {import('express').RequestHandler}
+ */
 const limiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minuto
     max: 100, // 100 peticiones por minuto por IP
     message: { success: false, error: 'Demasiadas peticiones desde esta IP, por favor intente de nuevo en un minuto.' }
 });
+
+// Aplicar el límite a todas las rutas bajo /api
 app.use('/api', limiter);
 
-// WebSockets
+/**
+ * Instancia de WebSockets.
+ * @type {Server}
+ */
 const io = new Server(server, { cors: corsOptions });
+
+// Almacenar la instancia de Socket.io en app para usarla en controladores
 app.set('socketio', io);
 
 // ==========================================
@@ -64,6 +110,10 @@ app.set('socketio', io);
 // ==========================================
 const { verificarSesion } = require('./middlewares/auth.middleware');
 
+/**
+ * Límite específico para peticiones de inicio de sesión para prevenir fuerza bruta.
+ * @type {import('express').RequestHandler}
+ */
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 10,
@@ -74,28 +124,43 @@ const loginLimiter = rateLimit({
 // 3. RUTAS CORE (AUTH & PÚBLICO)
 // ==========================================
 
+/**
+ * @route GET /api/health
+ * @description Ruta de control de salud para servicios de monitoreo o cron jobs.
+ */
 app.get('/api/health', (req, res) => {
     console.log("[CRON] Ping recibido para mantener el servidor despierto.");
     res.status(200).send('OK');
 });
+
 // ==========================================
 // 3. API DE AUTENTICACIÓN (LOGIN & JWT)
 // ==========================================
+
+/**
+ * @route POST /api/login
+ * @description Iniciar sesión del usuario, generar un token JWT y asignarlo como cookie.
+ * @param {express.Request} req - Petición HTTP.
+ * @param {express.Response} res - Respuesta HTTP.
+ * @param {express.NextFunction} next - Función para pasar el control al manejador de errores.
+ */
 app.post('/api/login', loginLimiter, async (req, res, next) => {
     try {
         // 1. LOG: Qué está llegando al servidor
         console.log("[LOGIN] Petición recibida:", req.body);
 
+        // Validación de datos de entrada usando Zod
         const { username, password } = z.object({ 
             username: z.string(), 
             password: z.string() 
         }).parse(req.body);
 
-        // 2. LOG: Qué estamos buscando
+        // 2. LOG: Qué estamos buscando en la base de datos
         const user = await prisma.usuarios.findFirst({
             where: { username: username, estado: 'activo' }
         });
         
+        // Si el usuario no existe o está inactivo, rechazar de inmediato
         if (!user) {
             console.log("[AUTH] Usuario no encontrado o inactivo:", username);
             return res.status(401).json({ error: 'Credenciales incorrectas' });
@@ -105,9 +170,12 @@ app.post('/api/login', loginLimiter, async (req, res, next) => {
         console.log("[AUTH] Usuario encontrado:", user.username, "| Verificando contraseña...");
 
         let esValida = false;
+        
+        // Comprobar si la contraseña ya fue hasheada (empieza por $2 de bcrypt)
         if (user.password.startsWith('$2')) {
             esValida = await bcrypt.compare(password, user.password);
         } else {
+            // Migración en caliente: Si la contraseña estaba en texto plano, la validamos y actualizamos a hash.
             esValida = user.password === password;
             if (esValida) {
                 const hash = await bcrypt.hash(password, 10);
@@ -118,17 +186,20 @@ app.post('/api/login', loginLimiter, async (req, res, next) => {
         // 4. LOG: Resultado de la comparación
         console.log("[AUTH] Contraseña válida:", esValida);
 
+        // Si la contraseña no es válida, devolvemos error
         if (!esValida) {
             console.log("[AUTH] Contraseña incorrecta para:", username);
             return res.status(401).json({ error: 'Credenciales incorrectas' });
         }
 
+        // Firmar el token JWT con los datos del usuario
         const token = jwt.sign(
             { id: user.id, username: user.username, rol: user.rol },
             process.env.JWT_SECRET,
             { expiresIn: '12h' }
         );
 
+        // Enviar el token como cookie segura y HTTP-only
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production', // true en Render
@@ -136,15 +207,29 @@ app.post('/api/login', loginLimiter, async (req, res, next) => {
             maxAge: 12 * 60 * 60 * 1000 // 12 horas
         });
 
+        // Retornar éxito junto con el rol y el token
         res.json({ success: true, rol: user.rol, token: token });
     } catch (err) { 
         next(err); 
     }
 });
+
+/**
+ * @route GET /api/usuario/actual
+ * @description Obtiene los datos básicos del usuario actualmente logueado mediante el middleware de verificación de sesión.
+ * @param {express.Request} req - Petición HTTP.
+ * @param {express.Response} res - Respuesta HTTP.
+ */
 app.get('/api/usuario/actual', verificarSesion, (req, res) => {
     res.json({ username: req.usuario.username, rol: req.usuario.rol });
 });
 
+/**
+ * @route GET /api/logout
+ * @description Cierra la sesión eliminando la cookie del token JWT.
+ * @param {express.Request} req - Petición HTTP.
+ * @param {express.Response} res - Respuesta HTTP.
+ */
 app.get('/api/logout', (req, res) => {
     res.clearCookie('token');
     res.json({ success: true });
@@ -168,20 +253,37 @@ app.use('/api/notificaciones', require('./routes/notificaciones.routes')); // Ca
 // 5. MANEJO DE ERRORES CENTRALIZADO
 // ==========================================
 
-// Global Error Handler para evitar fuga de información de Stack Traces
+/**
+ * Global Error Handler para capturar errores de toda la app y evitar fuga de información sensible.
+ * @param {Error} err - Objeto de error capturado.
+ * @param {express.Request} req - Petición HTTP.
+ * @param {express.Response} res - Respuesta HTTP.
+ * @param {express.NextFunction} next - Función next.
+ */
 app.use((err, req, res, next) => {
     console.error('[Error Crítico Servidor]', err);
+    
+    // Si es un error de validación de Zod, responder con los detalles
     if (err.name === 'ZodError' || (typeof z !== 'undefined' && err instanceof z.ZodError)) {
         return res.status(400).json({ success: false, error: "Datos inválidos", detalles: err.errors });
     }
+    
+    // Cualquier otro error interno
     res.status(500).json({ success: false, error: 'Ocurrió un error interno en el servidor.' });
 });
 
 // ==========================================
 // 6. ARRANQUE
 // ==========================================
+
+/**
+ * Puerto en el cual el servidor escuchará peticiones.
+ * @type {number|string}
+ */
 const PORT = process.env.PORT || 3000;
+
 server.listen(PORT, () => {
     console.log(`[SERVER] La Esquina - Servidor online en puerto ${PORT}`);
+    // Conectar a la base de datos al arrancar el servidor
     prisma.$connect().then(() => console.log("[DB] Base de datos conectada."));
 });
