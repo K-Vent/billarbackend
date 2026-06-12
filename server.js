@@ -162,6 +162,7 @@ app.use('/api', require('./routes/caja.routes'));
 app.use('/api', require('./routes/eventos.routes'));
 app.use('/api/usuarios', require('./routes/usuarios.routes'));
 app.use('/api', require('./routes/reportes.routes')); // NUEVA LÍNEA AÑADIDA
+app.use('/api/notificaciones', require('./routes/notificaciones.routes')); // Campanita Global
 
 // ==========================================
 // 5. MANEJO DE ERRORES CENTRALIZADO
