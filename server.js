@@ -32,7 +32,10 @@ const corsOptions = {
     origin: [
         'http://localhost:5173',
         'https://la-esquina-app.onrender.com',
-        'https://laesquinadelbillar.vercel.app'
+        'https://laesquinadelbillar.vercel.app',
+        'http://laesquinadelbillar.com',
+        'https://laesquinadelbillar.com',
+        'https://www.laesquinadelbillar.com'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -43,6 +46,14 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Rate Limiting (Protección contra DDoS y Fuerza Bruta)
+const limiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minuto
+    max: 100, // 100 peticiones por minuto por IP
+    message: { success: false, error: 'Demasiadas peticiones desde esta IP, por favor intente de nuevo en un minuto.' }
+});
+app.use('/api', limiter);
 
 // WebSockets
 const io = new Server(server, { cors: corsOptions });
@@ -155,10 +166,14 @@ app.use('/api', require('./routes/reportes.routes')); // NUEVA LÍNEA AÑADIDA
 // ==========================================
 // 5. MANEJO DE ERRORES CENTRALIZADO
 // ==========================================
+
+// Global Error Handler para evitar fuga de información de Stack Traces
 app.use((err, req, res, next) => {
-    console.error("[ERROR]", err);
-    if (err instanceof z.ZodError) return res.status(400).json({ error: "Datos inválidos", detalles: err.errors });
-    res.status(500).json({ error: "Ocurrió un error en el servidor." });
+    console.error('[Error Crítico Servidor]', err);
+    if (err.name === 'ZodError' || (typeof z !== 'undefined' && err instanceof z.ZodError)) {
+        return res.status(400).json({ success: false, error: "Datos inválidos", detalles: err.errors });
+    }
+    res.status(500).json({ success: false, error: 'Ocurrió un error interno en el servidor.' });
 });
 
 // ==========================================

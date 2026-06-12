@@ -68,6 +68,8 @@ model eventos_privados {
   fecha_solicitud      DateTime? @default(now()) @db.Timestamp(6)
   tipo_evento          String?   @default("No especificado") @db.VarChar(100)
   cliente_email        String?   @default("Sin correo") @db.VarChar(150)
+
+  @@index([fecha_evento], map: "idx_eventos_fecha")
 }
 
 model gastos {
@@ -102,6 +104,7 @@ model pedidos_mesa {
 
   @@index([pagado, entregado], map: "idx_pedidos_kds")
   @@index([mesa_id, pagado], map: "idx_pedidos_mesa_estado")
+  @@index([fecha_creacion], map: "idx_pedidos_fecha_creacion")
 }
 
 model productos {
@@ -117,9 +120,10 @@ model productos {
 model usuarios {
   id       Int     @id @default(autoincrement())
   username String  @unique @db.VarChar(50)
-  password String  @db.VarChar(255)
-  rol      String? @default("admin") @db.VarChar(20)
-  estado   String? @default("activo") @db.VarChar(20)
+  password       String    @db.VarChar(255)
+  rol            String?   @default("admin") @db.VarChar(20)
+  estado         String?   @default("activo") @db.VarChar(20)
+  fecha_registro DateTime? @default(now()) @db.Timestamp(6)
 }
 
 model ventas {

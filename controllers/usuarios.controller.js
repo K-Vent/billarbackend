@@ -23,6 +23,10 @@ const crearUsuario = async (req, res, next) => {
             return res.status(400).json({ error: 'Usuario y contraseña son requeridos.' });
         }
 
+        if (password.length < 8) {
+            return res.status(400).json({ error: 'Por seguridad, la contraseña debe tener al menos 8 caracteres.' });
+        }
+
         const existe = await prisma.usuarios.findUnique({ where: { username } });
         if (existe) {
             return res.status(400).json({ error: 'El nombre de usuario ya está en uso.' });
