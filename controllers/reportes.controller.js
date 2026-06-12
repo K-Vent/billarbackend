@@ -97,11 +97,46 @@ const getDashboardStats = async (req, res) => {
             monto: am._sum.total_final ? Number(am._sum.total_final) : 0
         }));
 
+        // 4. ADVANCED BI: Horas Pico y Días más rentables
+        const todasLasVentas = await prisma.ventas.findMany({
+            where: filterClause,
+            select: { fecha: true, total_final: true }
+        });
+
+        const horasPicoMap = {};
+        const diasRentablesMap = {};
+        const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+        todasLasVentas.forEach(v => {
+            if (v.fecha) {
+                const dateObj = new Date(v.fecha);
+                const hour = dateObj.getHours();
+                const dayIdx = dateObj.getDay();
+                const dia = diasSemana[dayIdx];
+                const total = Number(v.total_final) || 0;
+
+                horasPicoMap[hour] = (horasPicoMap[hour] || 0) + 1; // Frecuencia de transacciones
+                diasRentablesMap[dia] = (diasRentablesMap[dia] || 0) + total; // Sumatoria de ingresos
+            }
+        });
+
+        const estadisticasHoras = Object.keys(horasPicoMap).map(h => ({
+            hora: `${String(h).padStart(2, '0')}:00`,
+            frecuencia: horasPicoMap[h]
+        })).sort((a, b) => b.frecuencia - a.frecuencia).slice(0, 5); // Las 5 horas más movidas
+
+        const estadisticasDias = Object.keys(diasRentablesMap).map(d => ({
+            dia: d,
+            ingreso: diasRentablesMap[d]
+        })).sort((a, b) => b.ingreso - a.ingreso);
+
         // Retornamos la estructura limpia lista para renderizar en los gráficos
         res.json({
             mesas: estadisticasMesas,
             productos: estadisticasProductos,
-            metodos: estadisticasMetodos
+            metodos: estadisticasMetodos,
+            horas: estadisticasHoras,
+            dias: estadisticasDias
         });
 
     } catch (error) {
