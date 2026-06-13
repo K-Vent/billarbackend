@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { z } = require('zod');
 
 /**
  * Obtiene todas las reclamaciones (Para el panel de administración)
@@ -77,9 +78,10 @@ const updateReclamacion = async (req, res) => {
     try {
         const { id } = req.params;
         const { estado, respuesta_admin } = req.body;
+        const parsedId = z.coerce.number().int().parse(id);
 
         const reclamacionActualizada = await prisma.reclamaciones.update({
-            where: { id: parseInt(id) },
+            where: { id: parsedId },
             data: {
                 estado,
                 respuesta_admin,

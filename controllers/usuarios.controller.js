@@ -93,6 +93,9 @@ const cambiarEstadoUsuario = async (req, res, next) => {
     try {
         // Convierte el ID del usuario recibido en los parámetros de la URL a un entero
         const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+            return res.status(400).json({ error: 'El ID proporcionado no es un número válido.' });
+        }
         
         // Extrae el nuevo estado desde el cuerpo de la solicitud
         const { estado } = req.body; // 'activo' o 'inactivo'
@@ -128,6 +131,9 @@ const eliminarUsuario = async (req, res, next) => {
     try {
         // Obtiene el ID del usuario a eliminar y lo convierte a número entero
         const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+            return res.status(400).json({ error: 'El ID proporcionado no es un número válido.' });
+        }
 
         // Verifica que el usuario no intente eliminar su propia cuenta
         if (id === req.usuario.id) {

@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const { z } = require('zod');
 
 /**
  * Instancia del cliente de Prisma para interactuar con la base de datos.
@@ -100,8 +101,8 @@ const crearEvento = async (req, res, next) => {
  */
 const actualizarEstadoEvento = async (req, res, next) => {
     try {
-        // Obtener el ID del evento de los parámetros de la URL y convertirlo a un número entero
-        const id = parseInt(req.params.id);
+        // Obtener el ID del evento de los parámetros de la URL usando Zod para validación
+        const id = z.coerce.number().int().parse(req.params.id);
         
         // Extraer el nuevo estado del cuerpo de la petición
         // Ej: "Confirmado", "Cancelado", "Finalizado"

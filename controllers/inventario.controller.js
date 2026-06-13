@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { z } = require('zod');
 
 // ==========================================
 // CONTROLADOR DE INVENTARIO Y PRODUCTOS
@@ -84,8 +85,8 @@ const crearProducto = async (req, res, next) => {
  */
 const eliminarProducto = async (req, res, next) => {
     try {
-        // Convertimos el ID recibido por URL de string a entero para la consulta de Prisma
-        const id = parseInt(req.params.id);
+        // Convertimos el ID recibido por URL de string a entero para la consulta de Prisma usando Zod
+        const id = z.coerce.number().int().parse(req.params.id);
         
         // SOFT DELETE: Actualizamos el estado a 'inactivo' para inhabilitarlo en el frontend,
         // sin aplicar un DELETE real en la base de datos para no afectar el historial.
@@ -117,8 +118,8 @@ const eliminarProducto = async (req, res, next) => {
  */
 const actualizarProducto = async (req, res, next) => {
     try {
-        // Identificamos el producto a editar extrayendo y convirtiendo el ID de la URL
-        const id = parseInt(req.params.id);
+        // Identificamos el producto a editar extrayendo y convirtiendo el ID de la URL usando Zod
+        const id = z.coerce.number().int().parse(req.params.id);
         
         // Obtenemos los nuevos valores a actualizar desde el cuerpo de la petición
         const { nombre, precio, stock, categoria } = req.body;

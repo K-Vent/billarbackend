@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const { z } = require('zod');
 
 // ==========================================
 // CONTROLADORES VIP Y FIDELIZACIÓN
@@ -130,7 +131,7 @@ const loginVip = async (req, res, next) => {
  */
 const agregarSello = async (req, res, next) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = z.coerce.number().int().parse(req.params.id);
         
         // 1. Incrementamos el sello atómicamente en la base de datos
         const clienteActualizado = await prisma.clientes.update({
@@ -172,7 +173,7 @@ const agregarSello = async (req, res, next) => {
  */
 const canjearPremio = async (req, res, next) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = z.coerce.number().int().parse(req.params.id);
         
         // Obtenemos únicamente la información necesaria para calcular premios
         const cliente = await prisma.clientes.findUnique({
@@ -219,8 +220,8 @@ const escanearQr = async (req, res, next) => {
         // Validamos el formato del QR
         if (!codigo.startsWith('socio-')) return res.status(400).json({ error: "QR no válido para este sistema." });
         
-        // Extraemos el ID numérico del código QR
-        const idSocio = parseInt(codigo.split('-')[1]);
+        // Extraemos el ID numérico del código QR usando Zod para validación
+        const idSocio = z.coerce.number().int().parse(codigo.split('-')[1]);
         
         const cliente = await prisma.clientes.findUnique({
             where: { id: idSocio },
@@ -390,7 +391,7 @@ const agregarBeneficio = async (req, res, next) => {
  */
 const eliminarBeneficio = async (req, res, next) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = z.coerce.number().int().parse(req.params.id);
         await prisma.beneficios.delete({
             where: { id: id }
         });
@@ -412,7 +413,7 @@ const eliminarBeneficio = async (req, res, next) => {
  */
 const eliminarCliente = async (req, res, next) => {
     try {
-        const id = parseInt(req.params.id);
+        const id = z.coerce.number().int().parse(req.params.id);
         
         await prisma.clientes.delete({
             where: { id: id }

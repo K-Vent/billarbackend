@@ -108,6 +108,26 @@ app.set('socketio', io);
 // ==========================================
 // 2. MIDDLEWARES DE SEGURIDAD
 // ==========================================
+
+/**
+ * Middleware Anti-CSRF
+ * Protege endpoints mutables (POST, PUT, DELETE) contra Cross-Site Request Forgery
+ * verificando que el Origin de la petición sea parte de los permitidos en CORS.
+ */
+const antiCsrf = (req, res, next) => {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+    const origin = req.headers.origin || req.headers.referer;
+    if (!origin) return res.status(403).json({ error: "Petición bloqueada: Falta cabecera Origin (Posible CSRF)" });
+    
+    const isValidOrigin = corsOptions.origin.some(allowed => origin.startsWith(allowed));
+    if (!isValidOrigin) {
+        return res.status(403).json({ error: "Petición bloqueada: Origen no permitido (Posible CSRF)" });
+    }
+    next();
+};
+
+app.use(antiCsrf);
+
 const { verificarSesion } = require('./middlewares/auth.middleware');
 
 /**
@@ -175,12 +195,10 @@ app.post('/api/login', loginLimiter, async (req, res, next) => {
         if (user.password.startsWith('$2')) {
             esValida = await bcrypt.compare(password, user.password);
         } else {
-            // Migración en caliente: Si la contraseña estaba en texto plano, la validamos y actualizamos a hash.
-            esValida = user.password === password;
-            if (esValida) {
-                const hash = await bcrypt.hash(password, 10);
-                await prisma.usuarios.update({ where: { id: user.id }, data: { password: hash } });
-            }
+            // Seguridad: Bloqueamos el login en texto plano heredado.
+            // Los usuarios afectados deben restablecer la contraseña contactando a un admin.
+            console.warn(`[AUTH ALERTA] Intento de login con contraseña no encriptada en base de datos para: ${username}`);
+            return res.status(401).json({ error: 'Credenciales inválidas o cuenta que requiere actualización. Contacte a Soporte.' });
         }
 
         // 4. LOG: Resultado de la comparación
@@ -225,13 +243,17 @@ app.get('/api/usuario/actual', verificarSesion, (req, res) => {
 });
 
 /**
- * @route GET /api/logout
+ * @route POST /api/logout
  * @description Cierra la sesión eliminando la cookie del token JWT.
  * @param {express.Request} req - Petición HTTP.
  * @param {express.Response} res - Respuesta HTTP.
  */
-app.get('/api/logout', (req, res) => {
-    res.clearCookie('token');
+app.post('/api/logout', (req, res) => {
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none'
+    });
     res.json({ success: true });
 });
 
