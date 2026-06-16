@@ -24,9 +24,10 @@ model auditoria_logs {
 }
 
 model beneficios {
-  id          Int    @id @default(autoincrement())
-  nivel       String @db.VarChar(20)
-  descripcion String
+  id                 Int    @id @default(autoincrement())
+  nivel              String @db.VarChar(20)
+  sellos_requeridos  Int    @default(7)
+  descripcion_premio String
 }
 
 model cierres {

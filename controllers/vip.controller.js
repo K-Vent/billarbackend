@@ -363,14 +363,15 @@ const obtenerBeneficios = async (req, res, next) => {
  */
 const agregarBeneficio = async (req, res, next) => {
     try {
-        const { nivel, descripcion } = req.body;
+        const { nivel, descripcion_premio, sellos_requeridos } = req.body;
         // Validamos que se provean ambos campos necesarios
-        if (!nivel || !descripcion) return res.status(400).json({ error: "Faltan datos" });
+        if (!nivel || !descripcion_premio || !sellos_requeridos) return res.status(400).json({ error: "Faltan datos" });
         
         await prisma.beneficios.create({
             data: {
                 nivel: nivel,
-                descripcion: descripcion
+                descripcion_premio: descripcion_premio,
+                sellos_requeridos: parseInt(sellos_requeridos)
             }
         });
         res.json({ success: true });
